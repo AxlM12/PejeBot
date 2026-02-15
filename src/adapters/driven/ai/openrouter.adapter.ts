@@ -5,10 +5,8 @@ export class OpenRouterAdapter implements AIPort {
     private readonly client: OpenRouter;
     private readonly freeModels = [
         // Set the ai models here, will likely change it to be injected from env
-        "google/gemini-2.0-flash-lite-preview-02-05:free",
-        "google/gemini-2.0-flash-thinking-exp:free",
-        "mistralai/mistral-7b-instruct:free",
-        "google/gemma-2-9b-it:free",
+        "deepseek/deepseek-r1-0528:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
     ];
 
     constructor(apiKey: string) {
@@ -48,9 +46,17 @@ export class OpenRouterAdapter implements AIPort {
             if (!message || !message.content) throw new Error("Empty response from AI");
 
             // Handle potential multi-modal content (array of parts)
-            const content = Array.isArray(message.content)
+            // Handle potential multi-modal content (array of parts)
+            let content = Array.isArray(message.content)
                 ? message.content.map(c => 'text' in c ? c.text : '').join('')
                 : message.content;
+
+            if (!content) throw new Error("Empty response content");
+
+            // Sanitize: Remove markdown code blocks if present
+            // This regex removes ```json at the start and ``` at the end, 
+            // and also handles generic ``` blocks.
+            content = content.replace(/^```json\s*/g, "").replace(/^```\s*/g, "").replace(/\s*```$/g, "");
 
             const parsed = JSON.parse(content as string);
             return {
